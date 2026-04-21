@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { access, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
@@ -14,7 +14,7 @@ export async function saveUploadedFile(file: File) {
   const extension = path.extname(safeName);
   const storedFilename = `${Date.now()}-${randomUUID()}${extension}`;
   const relativePath = path.join("uploads", "meetings", storedFilename);
-  const absolutePath = path.join(process.cwd(), relativePath);
+  const absolutePath = path.join(uploadsDirectory, storedFilename);
   const fileBuffer = Buffer.from(await file.arrayBuffer());
 
   await mkdir(uploadsDirectory, { recursive: true });
@@ -26,4 +26,17 @@ export async function saveUploadedFile(file: File) {
     storedFilePath: relativePath.replaceAll("\\", "/"),
     buffer: fileBuffer,
   };
+}
+
+export function getStoredFileAbsolutePath(storedFilePath: string) {
+  return path.join(uploadsDirectory, path.basename(storedFilePath));
+}
+
+export async function storedFileExists(storedFilePath: string) {
+  try {
+    await access(getStoredFileAbsolutePath(storedFilePath));
+    return true;
+  } catch {
+    return false;
+  }
 }

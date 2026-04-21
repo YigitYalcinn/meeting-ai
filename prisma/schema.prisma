@@ -12,8 +12,11 @@ model Meeting {
   sourceType       String
   status           String   @default("ready")
   rawText          String?
+  transcript       String?
+  transcriptionError String?
   originalFileName String?
   mimeType         String?
   storedFilePath   String?
+  processedAt      DateTime?
   createdAt        DateTime @default(now())
 }

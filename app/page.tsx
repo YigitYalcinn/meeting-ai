@@ -92,7 +92,10 @@ export default async function Home() {
                     </h3>
                     <p className="mt-2 line-clamp-3 text-sm leading-6 text-zinc-600">
                       {meeting.sourceType === "audio_file"
-                        ? "Audio file uploaded. Transcription is pending."
+                        ? meeting.transcript?.trim() ||
+                          (meeting.status === "transcription_failed"
+                            ? meeting.transcriptionError || "Transcription failed."
+                            : "Audio file uploaded. Transcription is pending.")
                         : meeting.rawText?.trim() || "No meeting notes added yet."}
                     </p>
                   </Link>

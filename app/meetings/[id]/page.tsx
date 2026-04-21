@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { GenerateTranscriptButton } from "@/components/meetings/generate-transcript-button";
 import { prisma } from "@/lib/prisma";
 
 type MeetingDetailPageProps = {
@@ -77,6 +78,11 @@ export default async function MeetingDetailPage({
             <p className="mt-1 text-xs text-zinc-500">
               {meeting.mimeType || "No MIME type recorded"}
             </p>
+            {meeting.processedAt ? (
+              <p className="mt-2 text-xs text-zinc-500">
+                Processed {meeting.processedAt.toLocaleString()}
+              </p>
+            ) : null}
             {meeting.storedFilePath ? (
               <p className="mt-2 break-all text-xs text-zinc-500">
                 {meeting.storedFilePath}
@@ -89,25 +95,63 @@ export default async function MeetingDetailPage({
           <div className="mb-4 flex items-center justify-between gap-4">
             <h2 className="text-xl font-semibold">
               {meeting.sourceType === "audio_file"
-                ? "Audio upload status"
+                ? "Audio transcript"
                 : "Raw meeting text"}
             </h2>
             <span className="text-sm text-zinc-500">
-              {meeting.rawText ? `${meeting.rawText.length} characters` : "No text available"}
+              {meeting.sourceType === "audio_file"
+                ? meeting.transcript
+                  ? `${meeting.transcript.length} characters`
+                  : "No transcript yet"
+                : meeting.rawText
+                  ? `${meeting.rawText.length} characters`
+                  : "No text available"}
             </span>
           </div>
 
           <div className="rounded-2xl bg-zinc-50 p-5 text-sm leading-7 text-zinc-700">
             {meeting.sourceType === "audio_file" ? (
               <div className="space-y-3">
-                <p className="font-medium text-zinc-900">
-                  Transcription pending
-                </p>
-                <p className="text-zinc-600">
-                  The audio file has been uploaded and stored locally. In a later step,
-                  this meeting will move through transcription before summary and action
-                  item generation.
-                </p>
+                {meeting.status === "pending_transcription" ? (
+                  <>
+                    <p className="font-medium text-zinc-900">
+                      Transcription pending
+                    </p>
+                    <p className="text-zinc-600">
+                      The audio file is ready. Generate a transcript to prepare this meeting
+                      for the next AI step. In the current setup, transcription uses a free
+                      local mock unless you explicitly enable OpenAI.
+                    </p>
+                    <GenerateTranscriptButton meetingId={meeting.id} />
+                  </>
+                ) : null}
+
+                {meeting.status === "transcribing" ? (
+                  <>
+                    <p className="font-medium text-zinc-900">Transcribing audio</p>
+                    <p className="text-zinc-600">
+                      The audio file is currently being processed. Refresh the page in a
+                      moment if this state does not change automatically.
+                    </p>
+                  </>
+                ) : null}
+
+                {meeting.status === "transcription_failed" ? (
+                  <>
+                    <p className="font-medium text-red-700">Transcription failed</p>
+                    <p className="text-zinc-600">
+                      {meeting.transcriptionError || "The transcript could not be generated."}
+                    </p>
+                    <GenerateTranscriptButton meetingId={meeting.id} />
+                  </>
+                ) : null}
+
+                {meeting.status === "ready" && meeting.transcript ? (
+                  <div className="space-y-3">
+                    <p className="font-medium text-zinc-900">Transcript ready</p>
+                    <p className="whitespace-pre-wrap">{meeting.transcript}</p>
+                  </div>
+                ) : null}
               </div>
             ) : meeting.rawText ? (
               <p className="whitespace-pre-wrap">{meeting.rawText}</p>
