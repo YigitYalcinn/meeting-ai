@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { GenerateAnalysisButton } from "@/components/meetings/generate-analysis-button";
 import { GenerateTranscriptButton } from "@/components/meetings/generate-transcript-button";
 import { prisma } from "@/lib/prisma";
 
@@ -22,6 +23,21 @@ export default async function MeetingDetailPage({
   if (!meeting) {
     notFound();
   }
+
+  const keyPoints = Array.isArray(meeting.keyPoints)
+    ? (meeting.keyPoints as string[])
+    : [];
+  const actionItems = Array.isArray(meeting.actionItems)
+    ? (meeting.actionItems as {
+        title: string;
+        owner: string | null;
+        dueDate: string | null;
+      }[])
+    : [];
+  const sourceText =
+    meeting.sourceType === "audio_file"
+      ? meeting.transcript?.trim() || null
+      : meeting.rawText?.trim() || null;
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f5f9ff_0%,#ffffff_40%)] px-6 py-10 text-zinc-950">
@@ -160,6 +176,103 @@ export default async function MeetingDetailPage({
                 No raw meeting text is available for this meeting.
               </p>
             )}
+          </div>
+        </section>
+
+        <section className="rounded-3xl border border-black/10 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold">AI analysis</h2>
+              <p className="mt-1 text-sm text-zinc-500">
+                Generate a summary, key points, and structured action items from the meeting content.
+              </p>
+            </div>
+            {meeting.analyzedAt ? (
+              <span className="text-sm text-zinc-500">
+                Analyzed {meeting.analyzedAt.toLocaleString()}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="space-y-5 rounded-2xl bg-zinc-50 p-5">
+            {!meeting.summary && !meeting.analysisError ? (
+              <div className="space-y-3">
+                <p className="font-medium text-zinc-900">No analysis yet</p>
+                <p className="text-zinc-600">
+                  {sourceText
+                    ? "This meeting is ready for AI analysis."
+                    : "This meeting does not have usable text yet. Add text or generate a transcript first."}
+                </p>
+                {sourceText ? (
+                  <GenerateAnalysisButton meetingId={meeting.id} />
+                ) : null}
+              </div>
+            ) : null}
+
+            {meeting.analysisError ? (
+              <div className="space-y-3">
+                <p className="font-medium text-red-700">Analysis failed</p>
+                <p className="text-zinc-600">{meeting.analysisError}</p>
+                {sourceText ? (
+                  <GenerateAnalysisButton meetingId={meeting.id} />
+                ) : null}
+              </div>
+            ) : null}
+
+            {meeting.summary ? (
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-zinc-950">Summary</h3>
+                  <p className="whitespace-pre-wrap text-zinc-700">
+                    {meeting.summary}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-zinc-950">Key points</h3>
+                  {keyPoints.length > 0 ? (
+                    <ul className="space-y-2 text-zinc-700">
+                      {keyPoints.map((point) => (
+                        <li
+                          key={point}
+                          className="rounded-2xl border border-zinc-200 bg-white px-4 py-3"
+                        >
+                          {point}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-zinc-500">No key points were returned.</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold text-zinc-950">Action items</h3>
+                  {actionItems.length > 0 ? (
+                    <div className="space-y-3">
+                      {actionItems.map((item, index) => (
+                        <div
+                          key={`${item.title}-${index}`}
+                          className="rounded-2xl border border-zinc-200 bg-white px-4 py-4"
+                        >
+                          <p className="font-medium text-zinc-950">{item.title}</p>
+                          <p className="mt-2 text-sm text-zinc-600">
+                            Owner: {item.owner || "Unassigned"}
+                          </p>
+                          <p className="text-sm text-zinc-600">
+                            Due date: {item.dueDate || "Not specified"}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-zinc-500">No action items were returned.</p>
+                  )}
+                </div>
+
+                <GenerateAnalysisButton meetingId={meeting.id} />
+              </div>
+            ) : null}
           </div>
         </section>
       </div>

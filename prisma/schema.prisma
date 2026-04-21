@@ -14,9 +14,14 @@ model Meeting {
   rawText          String?
   transcript       String?
   transcriptionError String?
+  summary          String?
+  keyPoints        Json?
+  actionItems      Json?
+  analysisError    String?
   originalFileName String?
   mimeType         String?
   storedFilePath   String?
   processedAt      DateTime?
+  analyzedAt       DateTime?
   createdAt        DateTime @default(now())
 }
