@@ -79,6 +79,9 @@ export default async function Home() {
                       <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
                         {meeting.sourceType}
                       </span>
+                      <span className="rounded-full bg-zinc-950 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white">
+                        {meeting.status}
+                      </span>
                       <span className="text-sm text-zinc-500">
                         {meeting.createdAt.toLocaleString()}
                       </span>
@@ -88,7 +91,9 @@ export default async function Home() {
                       {meeting.title}
                     </h3>
                     <p className="mt-2 line-clamp-3 text-sm leading-6 text-zinc-600">
-                      {meeting.rawText?.trim() || "No meeting notes added yet."}
+                      {meeting.sourceType === "audio_file"
+                        ? "Audio file uploaded. Transcription is pending."
+                        : meeting.rawText?.trim() || "No meeting notes added yet."}
                     </p>
                   </Link>
                 ))}

@@ -1,13 +1,21 @@
-const allowedSourceTypes = ["manual"] as const;
+const allowedSourceTypes = ["manual", "text_file", "audio_file"] as const;
+const allowedMeetingStatuses = ["ready", "pending_transcription"] as const;
+const allowedTextFileExtensions = [".txt", ".md"] as const;
+const allowedAudioFileExtensions = [".mp3", ".wav", ".m4a"] as const;
 
 export type MeetingSourceType = (typeof allowedSourceTypes)[number];
+export type MeetingStatus = (typeof allowedMeetingStatuses)[number];
 
 type ValidationSuccess = {
   success: true;
   data: {
     title: string;
     sourceType: MeetingSourceType;
+    status: MeetingStatus;
     rawText: string | null;
+    originalFileName: string | null;
+    mimeType: string | null;
+    storedFilePath: string | null;
   };
 };
 
@@ -37,7 +45,7 @@ export function validateMeetingInput(input: unknown): MeetingValidationResult {
     typeof sourceType !== "string" ||
     !allowedSourceTypes.includes(sourceType as MeetingSourceType)
   ) {
-    errors.push("Source type must be 'manual'.");
+    errors.push("Source type must be one of: manual, text_file, audio_file.");
   }
 
   if (
@@ -68,9 +76,42 @@ export function validateMeetingInput(input: unknown): MeetingValidationResult {
     data: {
       title: trimmedTitle,
       sourceType: validatedSourceType,
+      status: "ready",
       rawText: normalizedRawText,
+      originalFileName: null,
+      mimeType: null,
+      storedFilePath: null,
     },
   };
 }
 
-export { allowedSourceTypes };
+export function validateMeetingTitle(title: unknown): string | null {
+  if (typeof title !== "string" || title.trim().length === 0) {
+    return null;
+  }
+
+  return title.trim();
+}
+
+export function isSupportedTextFile(filename: string): boolean {
+  const normalizedName = filename.toLowerCase();
+
+  return allowedTextFileExtensions.some((extension) =>
+    normalizedName.endsWith(extension),
+  );
+}
+
+export function isSupportedAudioFile(filename: string): boolean {
+  const normalizedName = filename.toLowerCase();
+
+  return allowedAudioFileExtensions.some((extension) =>
+    normalizedName.endsWith(extension),
+  );
+}
+
+export {
+  allowedAudioFileExtensions,
+  allowedMeetingStatuses,
+  allowedSourceTypes,
+  allowedTextFileExtensions,
+};

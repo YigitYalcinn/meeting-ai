@@ -3,15 +3,43 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useState, useTransition } from "react";
 
+type MeetingInputMode = "manual" | "text_file" | "audio_file";
+
 type FormState = {
   title: string;
+  sourceType: MeetingInputMode;
   rawText: string;
+  file: File | null;
 };
 
 const initialFormState: FormState = {
   title: "",
+  sourceType: "manual",
   rawText: "",
+  file: null,
 };
+
+const inputModes: {
+  value: MeetingInputMode;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: "manual",
+    label: "Manual text",
+    description: "Paste or write meeting notes directly.",
+  },
+  {
+    value: "text_file",
+    label: "Text file",
+    description: "Upload a .txt or .md file and save its contents as meeting text.",
+  },
+  {
+    value: "audio_file",
+    label: "Audio file",
+    description: "Upload audio now and transcribe it later.",
+  },
+];
 
 export function CreateMeetingForm() {
   const router = useRouter();
@@ -25,16 +53,25 @@ export function CreateMeetingForm() {
 
     startTransition(async () => {
       try {
+        const body = new FormData();
+        body.append("title", formState.title);
+        body.append("sourceType", formState.sourceType);
+
+        if (formState.sourceType === "manual") {
+          body.append("rawText", formState.rawText);
+        }
+
+        if (
+          (formState.sourceType === "text_file" ||
+            formState.sourceType === "audio_file") &&
+          formState.file
+        ) {
+          body.append("file", formState.file);
+        }
+
         const response = await fetch("/api/meetings", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title: formState.title,
-            sourceType: "manual",
-            rawText: formState.rawText,
-          }),
+          body,
         });
 
         const result = await response.json();
@@ -67,11 +104,57 @@ export function CreateMeetingForm() {
       <div className="space-y-1">
         <p className="text-sm font-medium text-sky-700">Create meeting</p>
         <h2 className="text-2xl font-semibold text-zinc-950">
-          Add a meeting note manually
+          Add a meeting from text or file upload
         </h2>
         <p className="text-sm text-zinc-600">
-          Start with manual text input. AI summary and action items come later.
+          Manual text, text file upload, and audio upload all create the same meeting record.
         </p>
+      </div>
+
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-zinc-800">Input mode</p>
+        <div className="grid gap-3">
+          {inputModes.map((mode) => {
+            const isSelected = formState.sourceType === mode.value;
+
+            return (
+              <label
+                key={mode.value}
+                className={`block cursor-pointer rounded-2xl border p-4 transition ${
+                  isSelected
+                    ? "border-sky-500 bg-sky-50"
+                    : "border-zinc-200 bg-zinc-50"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <input
+                    type="radio"
+                    name="sourceType"
+                    value={mode.value}
+                    checked={isSelected}
+                    onChange={() =>
+                      setFormState((current) => ({
+                        ...current,
+                        sourceType: mode.value,
+                        rawText: mode.value === "manual" ? current.rawText : "",
+                        file: null,
+                      }))
+                    }
+                    className="mt-1"
+                  />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-zinc-950">
+                      {mode.label}
+                    </p>
+                    <p className="text-sm leading-6 text-zinc-600">
+                      {mode.description}
+                    </p>
+                  </div>
+                </div>
+              </label>
+            );
+          })}
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -94,25 +177,78 @@ export function CreateMeetingForm() {
         />
       </div>
 
-      <div className="space-y-2">
-        <label htmlFor="rawText" className="text-sm font-medium text-zinc-800">
-          Meeting notes
-        </label>
-        <textarea
-          id="rawText"
-          name="rawText"
-          value={formState.rawText}
-          onChange={(event) =>
-            setFormState((current) => ({
-              ...current,
-              rawText: event.target.value,
-            }))
-          }
-          placeholder="Write the meeting content here..."
-          rows={8}
-          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-sky-500"
-        />
-      </div>
+      {formState.sourceType === "manual" ? (
+        <div className="space-y-2">
+          <label htmlFor="rawText" className="text-sm font-medium text-zinc-800">
+            Meeting notes
+          </label>
+          <textarea
+            id="rawText"
+            name="rawText"
+            value={formState.rawText}
+            onChange={(event) =>
+              setFormState((current) => ({
+                ...current,
+                rawText: event.target.value,
+              }))
+            }
+            placeholder="Write the meeting content here..."
+            rows={8}
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-sky-500"
+          />
+          <p className="text-xs leading-5 text-zinc-500">
+            Use this when you want to paste notes directly into the app.
+          </p>
+        </div>
+      ) : null}
+
+      {formState.sourceType === "text_file" ? (
+        <div className="space-y-2">
+          <label htmlFor="file" className="text-sm font-medium text-zinc-800">
+            Text file
+          </label>
+          <input
+            id="file"
+            name="file"
+            type="file"
+            accept=".txt,.md,text/plain,text/markdown"
+            onChange={(event) =>
+              setFormState((current) => ({
+                ...current,
+                file: event.target.files?.[0] ?? null,
+              }))
+            }
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition file:mr-4 file:rounded-full file:border-0 file:bg-zinc-950 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white"
+          />
+          <p className="text-xs leading-5 text-zinc-500">
+            Supported for now: `.txt` and `.md`. The file contents will be saved into raw meeting text.
+          </p>
+        </div>
+      ) : null}
+
+      {formState.sourceType === "audio_file" ? (
+        <div className="space-y-2">
+          <label htmlFor="file" className="text-sm font-medium text-zinc-800">
+            Audio file
+          </label>
+          <input
+            id="file"
+            name="file"
+            type="file"
+            accept=".mp3,.wav,.m4a,audio/mpeg,audio/wav,audio/x-wav,audio/mp4"
+            onChange={(event) =>
+              setFormState((current) => ({
+                ...current,
+                file: event.target.files?.[0] ?? null,
+              }))
+            }
+            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition file:mr-4 file:rounded-full file:border-0 file:bg-zinc-950 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white"
+          />
+          <p className="text-xs leading-5 text-zinc-500">
+            Supported for now: `.mp3`, `.wav`, `.m4a`. The file will be stored locally and marked as pending transcription.
+          </p>
+        </div>
+      ) : null}
 
       {error ? (
         <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
