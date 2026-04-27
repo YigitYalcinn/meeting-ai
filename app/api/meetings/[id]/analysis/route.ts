@@ -24,7 +24,8 @@ const analysisSchema = {
   properties: {
     summary: {
       type: "string",
-      description: "A concise meeting summary written for a product dashboard.",
+      description:
+        "A polished executive-style meeting summary in 4 to 6 sentences. Cover the objective, core discussion, critical decisions, risks, metrics, and immediate next steps.",
     },
     keyPoints: {
       type: "array",
@@ -163,12 +164,43 @@ export async function POST(
       input: [
         {
           role: "system",
-          content:
-            "You are a meeting analysis assistant. Return structured JSON only. Keep the summary practical and concise. Extract useful key points and action items for a dashboard view.",
+          content: `
+You are a senior operations analyst creating meeting reports for a professional SaaS product.
+
+Return structured JSON only.
+
+Writing rules:
+- Write a crisp, executive-style summary.
+- Make the summary readable in a dashboard and PDF report.
+- Include the meeting purpose, main decisions, notable risks or blockers, and immediate next steps when present.
+- Preserve the most important metrics or numerical changes when they materially affect the discussion.
+- Write so that someone who did not attend the meeting can still understand what happened quickly.
+- Do not use filler phrases like "the meeting discussed".
+- Key points should be short, specific, and useful.
+- Prefer points that capture decisions, risks, ownership gaps, and measurable performance signals.
+- Prefer explicit phrasing such as "Decision:", "Risk:", "Metric:", or "Next step:" when helpful for clarity.
+- Action items must be concrete and implementation-ready.
+- If an owner is not clearly stated, use null.
+- If a due date is not clearly stated, use null.
+- Do not invent facts that are not supported by the meeting text.
+          `.trim(),
         },
         {
           role: "user",
-          content: `Analyze this meeting content and return JSON that matches the provided schema.\n\nMeeting title: ${meeting.title}\n\nMeeting content:\n${sourceText}`,
+          content: `
+Analyze this meeting content and return JSON that matches the provided schema.
+
+Meeting title: ${meeting.title}
+
+Output expectations:
+- summary: 4 to 6 sentences, polished and professional
+- keyPoints: 5 to 8 high-signal bullets
+- keyPoints should include important metrics, blockers, or explicit decisions if they exist
+- actionItems: only real tasks that someone could act on
+
+Meeting content:
+${sourceText}
+          `.trim(),
         },
       ],
       text: {
