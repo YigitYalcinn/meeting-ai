@@ -213,7 +213,7 @@ export default async function MeetingDetailPage({
         </section>
 
         <section className="surface rounded-2xl">
-          <div className="border-b border-slate-200 bg-[#101828] px-5 py-5 text-white sm:px-6">
+          <div className="analysis-panel-header border-b px-5 py-5 sm:px-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-blue-200">

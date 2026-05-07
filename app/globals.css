@@ -331,6 +331,40 @@ select {
   color: #cbd5e1;
 }
 
+.analysis-panel-header {
+  border-color: #d9dee8;
+  background: #101828;
+  color: #ffffff;
+}
+
+.analysis-panel-header p:first-child {
+  color: #bfdbfe;
+}
+
+.analysis-panel-header p + p {
+  color: #cbd5e1;
+}
+
+.dark .analysis-panel-header {
+  border-color: #334155;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.dark .analysis-panel-header p:first-child {
+  color: #1d4ed8;
+}
+
+.dark .analysis-panel-header p + p {
+  color: #475467;
+}
+
+.dark .analysis-panel-header .bg-white\/10 {
+  background-color: #e2e8f0;
+  color: #0f172a;
+  --tw-ring-color: #cbd5e1;
+}
+
 .theme-toggle {
   display: inline-flex;
   min-height: 2.5rem;
