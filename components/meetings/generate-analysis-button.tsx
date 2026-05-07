@@ -44,13 +44,13 @@ export function GenerateAnalysisButton({
         type="button"
         onClick={handleClick}
         disabled={isPending}
-        className="inline-flex h-11 items-center justify-center rounded-full bg-sky-600 px-5 text-sm font-medium text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:bg-sky-300"
+        className="btn-primary"
       >
         {isPending ? "Generating..." : "Generate AI Summary"}
       </button>
 
       {error ? (
-        <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
           {error}
         </p>
       ) : null}

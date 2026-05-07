@@ -7,6 +7,8 @@ const eslintConfig = defineConfig([
   ...nextTs,
   globalIgnores([
     ".next/**",
+    "meeting-ai/.next/**",
+    "meeting-ai/node_modules/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
