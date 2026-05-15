@@ -109,6 +109,13 @@ function isAnalysisResponse(value: unknown): value is AnalysisResponse {
   });
 }
 
+function getAnalysisModel() {
+  return (process.env.OPENAI_ANALYSIS_MODEL || "gpt-4.1-mini").replaceAll(
+    "_",
+    "-",
+  );
+}
+
 export async function POST(
   _request: Request,
   { params }: MeetingAnalysisRouteProps,
@@ -166,7 +173,7 @@ export async function POST(
     });
 
     const response = await openai.responses.create({
-      model: process.env.OPENAI_ANALYSIS_MODEL || "gpt-4.1-mini",
+      model: getAnalysisModel(),
       input: [
         {
           role: "system",
