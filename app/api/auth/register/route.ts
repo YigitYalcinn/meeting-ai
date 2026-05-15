@@ -59,7 +59,14 @@ export async function POST(request: Request) {
       );
     }
 
-    console.error("Failed to register:", error);
+    console.error("Failed to register:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      code:
+        error instanceof Prisma.PrismaClientKnownRequestError
+          ? error.code
+          : undefined,
+      name: error instanceof Error ? error.name : undefined,
+    });
 
     return Response.json({ error: "Failed to create account." }, { status: 500 });
   }

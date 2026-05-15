@@ -29,7 +29,10 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Failed to login:", error);
+    console.error("Failed to login:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      name: error instanceof Error ? error.name : undefined,
+    });
 
     return Response.json({ error: "Failed to sign in." }, { status: 500 });
   }
