@@ -1,118 +1,124 @@
-# AI Meeting Summary & Action Tracker
+# MeetAI
 
-A portfolio-grade MVP for turning meeting notes into structured outputs that are easy to review, manage, and export.
+MeetAI is a full-stack meeting intelligence workspace for capturing meeting source material, generating transcripts and AI analysis, and exporting executive-ready PDF reports.
 
-This product is being built step by step as a real full-stack dashboard app, not a toy demo. The current version focuses on the core meeting flow: creating meetings, storing them in SQLite, listing them in a dashboard, and opening a dedicated detail page for each meeting.
+The app is built as a practical SaaS-style product surface: users create an account, work inside a private meeting library, upload or paste meeting content, generate structured outputs, and review each record from a dedicated detail page.
 
-## Product Vision
+## Features
 
-Users will be able to:
-
-- add meeting content manually
-- generate AI summaries
-- extract key discussion points
-- extract action items
-- assign tasks to people mentioned in the meeting
-- review everything in a clean dashboard
-- export results as PDF
-
-## Current Status
-
-Phase 1 is in progress and the backend foundation is already working.
-
-Implemented so far:
-
-- reusable Prisma client setup
-- SQLite database connection
-- `GET /api/meetings`
-- `POST /api/meetings`
-- request validation for `title` and `sourceType`
-- dashboard page with meeting list
-- client-side meeting creation form
-- meeting detail page
-
-Not implemented yet:
-
-- AI summary generation
-- structured key points and action items
-- PDF export
-- authentication
-- file upload
-- email sending
+- User registration, login, logout, and private meeting records
+- Manual meeting notes
+- `.txt` and `.md` meeting imports
+- Audio uploads with transcript generation
+- OpenAI-powered meeting summaries, key points, and action items
+- Meeting metrics, decisions, risks, and blockers surfaced in the detail view
+- PDF export for analyzed meetings
+- Vercel-ready persistence with Postgres and Vercel Blob
+- Dark mode support
 
 ## Tech Stack
 
 - Next.js 16 App Router
-- TypeScript
 - React 19
+- TypeScript
 - Prisma 7
-- SQLite
+- PostgreSQL
+- Vercel Blob
+- OpenAI API
 - Tailwind CSS 4
+- pdf-lib / pdfkit
 
-## Features
+## Product Flow
 
-### Current MVP features
-
-- Create a meeting with manual text input
-- Save meetings to the database
-- View all meetings in a dashboard-style list
-- Open a dedicated detail page for each meeting
-- Use a typed API layer with Prisma-backed persistence
-
-### Planned V1 features
-
-- AI-generated summary
-- structured key points
-- structured action items
-- task grouping by owner
-- PDF export
+1. Create an account or sign in.
+2. Open the workspace.
+3. Create a meeting from manual text, a text file, or an audio file.
+4. For audio records, generate a transcript.
+5. Run AI analysis when usable meeting text is available.
+6. Review summary, key points, action items, metrics, decisions, and risks.
+7. Export the final analysis as a PDF report.
 
 ## Project Structure
 
 ```text
 app/
-  api/meetings/route.ts       Meetings API
-  meetings/[id]/page.tsx      Meeting detail page
-  page.tsx                    Dashboard page
+  api/auth/                    Register, login, logout API routes
+  api/meetings/                Meeting create/list API routes
+  api/meetings/[id]/analysis   AI analysis route
+  api/meetings/[id]/export     PDF export route
+  api/meetings/[id]/transcript Transcript generation route
+  login/                       Login page
+  register/                    Registration page
+  workspace/                   Authenticated meeting workspace
+  meetings/[id]/               Meeting detail page
 components/
-  meetings/create-meeting-form.tsx
+  auth/                        Auth form and logout button
+  meetings/                    Meeting workflow controls
 lib/
-  prisma.ts                   Reusable Prisma client
-  validations/meeting.ts      API request validation
+  auth.ts                      Session and password helpers
+  openai.ts                    OpenAI client helper
+  prisma.ts                    Prisma client
+  uploads.ts                   Local/Vercel Blob upload helpers
+  validations/                 API validation
 prisma/
-  schema.prisma               Database schema
-  migrations/                 Prisma migrations
+  schema.prisma                Database schema
+  migrations/                  Prisma migrations
+scripts/
+  vercel-migrate.cjs           Safe migration helper for Vercel builds
+```
+
+## Environment Variables
+
+Create `.env` locally from `.env.example`.
+
+```env
+DATABASE_URL="postgres://user:password@host:5432/database"
+
+# Supported alternatives for Vercel/Prisma integrations:
+# PRISMA_DATABASE_URL="postgres://user:password@host:5432/database"
+# POSTGRES_PRISMA_URL="postgres://user:password@host:5432/database"
+# POSTGRES_URL="postgres://user:password@host:5432/database"
+
+BLOB_READ_WRITE_TOKEN="vercel_blob_read_write_token"
+TRANSCRIPTION_PROVIDER="mock"
+OPENAI_API_KEY="your_openai_api_key"
+OPENAI_ANALYSIS_MODEL="gpt-4.1-mini"
+AUTH_COOKIE_SECURE="true"
+```
+
+For local HTTP testing, set:
+
+```env
+AUTH_COOKIE_SECURE="false"
+```
+
+For production on Vercel, keep:
+
+```env
+AUTH_COOKIE_SECURE="true"
 ```
 
 ## Local Setup
 
-### 1. Install dependencies
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-### 2. Create environment file
-
-Copy `.env.example` to `.env`.
+Generate Prisma Client:
 
 ```bash
-DATABASE_URL="file:./dev.db"
+npm run prisma:generate
 ```
 
-### 3. Generate Prisma client
+Apply database migrations to your Postgres database:
 
 ```bash
-npx prisma generate
+npm run prisma:migrate:deploy
 ```
 
-### 4. Run database migrations
-
-```bash
-npx prisma migrate dev
-```
-
-### 5. Start the app
+Start the development server:
 
 ```bash
 npm run dev
@@ -120,61 +126,74 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-## API
+## Scripts
 
-### `GET /api/meetings`
-
-Returns all meetings ordered by newest first.
-
-### `POST /api/meetings`
-
-Creates a meeting.
-
-Example request body:
-
-```json
-{
-  "title": "Weekly Product Sync",
-  "sourceType": "manual",
-  "rawText": "Ali will update the landing page. Zeynep will prepare the metrics report."
-}
+```bash
+npm run dev
+npm run build
+npm run start
+npm run lint
+npm run prisma:generate
+npm run prisma:migrate:deploy
 ```
 
-## Why This Project Matters
+`npm run build` runs Prisma Client generation, safely applies migrations only in Vercel when a Postgres URL exists, and then builds the Next.js app.
 
-This repository is designed to demonstrate:
+## Vercel Deployment
 
-- full-stack product thinking
-- dashboard-style UI construction
-- CRUD foundations in a SaaS-like app
-- structured AI-ready architecture
-- practical TypeScript and Prisma usage
+This project is designed for Vercel with:
 
-The goal is to show a realistic product build process that can be presented on GitHub, LinkedIn, a CV, or a personal portfolio site.
+- GitHub deployment
+- Postgres database
+- Vercel Blob storage
+- OpenAI API key
 
-## Roadmap
+Required production environment variables:
 
-### Phase 1
+```env
+DATABASE_URL="postgres://..."
+BLOB_READ_WRITE_TOKEN="..."
+OPENAI_API_KEY="..."
+OPENAI_ANALYSIS_MODEL="gpt-4.1-mini"
+TRANSCRIPTION_PROVIDER="openai"
+AUTH_COOKIE_SECURE="true"
+```
 
-- core meeting flow
-- dashboard
-- detail page
+If your database integration exposes `PRISMA_DATABASE_URL`, `POSTGRES_PRISMA_URL`, or `POSTGRES_URL` instead of `DATABASE_URL`, the app supports those names too.
 
-### Phase 2
+On Vercel, the build script runs a guarded migration helper:
 
-- AI-ready schema for structured outputs
+```bash
+node scripts/vercel-migrate.cjs
+```
 
-### Phase 3
+It runs `prisma migrate deploy` only when the build is running on Vercel and a valid Postgres URL is available.
 
-- AI integration for summary and action items
+## API Overview
 
-### Phase 4
+### Auth
 
-- PDF export
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
 
-### Phase 5
+### Meetings
 
-- polish, empty states, loading states, and portfolio cleanup
+- `GET /api/meetings`
+- `POST /api/meetings`
+- `POST /api/meetings/[id]/transcript`
+- `POST /api/meetings/[id]/analysis`
+- `GET /api/meetings/[id]/export`
+
+Meeting APIs require an authenticated session.
+
+## Notes
+
+- Uploaded files are stored in Vercel Blob when `BLOB_READ_WRITE_TOKEN` is configured.
+- Without Blob credentials, uploads fall back to local `uploads/meetings`, which is suitable only for local development.
+- `TRANSCRIPTION_PROVIDER="mock"` returns a local mock transcript for development.
+- `TRANSCRIPTION_PROVIDER="openai"` uses OpenAI audio transcription for uploaded audio.
+- The app stores session tokens as hashes in the database and sends the browser an httpOnly cookie.
 
 ## License
 
