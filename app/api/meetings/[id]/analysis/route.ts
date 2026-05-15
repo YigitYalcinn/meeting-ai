@@ -1,5 +1,6 @@
-import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 import { getOpenAIClient } from "@/lib/openai";
+import { prisma } from "@/lib/prisma";
 
 type MeetingAnalysisRouteProps = {
   params: Promise<{
@@ -113,10 +114,15 @@ export async function POST(
   { params }: MeetingAnalysisRouteProps,
 ) {
   const { id } = await params;
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return Response.json({ error: "Authentication required." }, { status: 401 });
+  }
 
   try {
-    const meeting = await prisma.meeting.findUnique({
-      where: { id },
+    const meeting = await prisma.meeting.findFirst({
+      where: { id, userId: user.id },
     });
 
     if (!meeting) {

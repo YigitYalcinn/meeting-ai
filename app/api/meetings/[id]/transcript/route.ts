@@ -1,8 +1,10 @@
-import { createReadStream } from "node:fs";
-
-import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth";
 import { getOpenAIClient } from "@/lib/openai";
-import { getStoredFileAbsolutePath, storedFileExists } from "@/lib/uploads";
+import { prisma } from "@/lib/prisma";
+import {
+  getStoredFileBuffer,
+  storedFileExists,
+} from "@/lib/uploads";
 
 type TranscriptRouteProps = {
   params: Promise<{
@@ -36,10 +38,15 @@ export async function POST(
   { params }: TranscriptRouteProps,
 ) {
   const { id } = await params;
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return Response.json({ error: "Authentication required." }, { status: 401 });
+  }
 
   try {
-    const meeting = await prisma.meeting.findUnique({
-      where: { id },
+    const meeting = await prisma.meeting.findFirst({
+      where: { id, userId: user.id },
     });
 
     if (!meeting) {
@@ -110,9 +117,16 @@ export async function POST(
         );
       }
 
-      const absolutePath = getStoredFileAbsolutePath(meeting.storedFilePath);
+      const fileBuffer = await getStoredFileBuffer(meeting.storedFilePath);
+      const transcriptionFile = new File(
+        [fileBuffer],
+        meeting.originalFileName || "audio-upload",
+        {
+          type: meeting.mimeType || "application/octet-stream",
+        },
+      );
       const transcriptResponse = await openai.audio.transcriptions.create({
-        file: createReadStream(absolutePath),
+        file: transcriptionFile,
         model: "gpt-4o-transcribe",
       });
 

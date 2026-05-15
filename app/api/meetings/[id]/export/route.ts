@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import fontkit from "@pdf-lib/fontkit";
 import { PDFDocument, rgb } from "pdf-lib";
 
+import { getCurrentUser } from "@/lib/auth";
 import { getMeetingActionItems, getMeetingKeyPoints } from "@/lib/meeting-analysis";
 import {
   deriveDecisionHighlights,
@@ -1068,9 +1069,14 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const user = await getCurrentUser();
 
-    const meeting = await prisma.meeting.findUnique({
-      where: { id },
+    if (!user) {
+      return Response.json({ error: "Authentication required." }, { status: 401 });
+    }
+
+    const meeting = await prisma.meeting.findFirst({
+      where: { id, userId: user.id },
     });
 
     if (!meeting) {

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { LogoutButton } from "@/components/auth/logout-button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { getCurrentUser } from "@/lib/auth";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,9 +17,26 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const userPromise = getCurrentUser();
+
   return (
     <html lang="en" className="h-full antialiased" suppressHydrationWarning>
       <body className="app-shell min-h-full">
+        <Header userPromise={userPromise} />
+        {children}
+      </body>
+    </html>
+  );
+}
+
+async function Header({
+  userPromise,
+}: {
+  userPromise: ReturnType<typeof getCurrentUser>;
+}) {
+  const user = await userPromise;
+
+  return (
         <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/86 backdrop-blur-xl">
           <div className="container-page flex items-center justify-between gap-4 py-3">
             <Link href="/" className="flex min-w-0 items-center gap-3">
@@ -57,14 +76,25 @@ export default function RootLayout({
 
             <div className="flex items-center gap-2">
               <ThemeToggle />
-              <Link href="/workspace" className="btn-dark h-10 min-h-10 px-3">
-                Open app
-              </Link>
+              {user ? (
+                <>
+                  <span className="hidden max-w-[13rem] truncate text-sm font-bold text-slate-600 md:inline">
+                    {user.email}
+                  </span>
+                  <LogoutButton />
+                </>
+              ) : (
+                <>
+                  <Link href="/login" className="btn-secondary h-10 min-h-10 px-3">
+                    Sign in
+                  </Link>
+                  <Link href="/register" className="btn-dark h-10 min-h-10 px-3">
+                    Create account
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </header>
-        {children}
-      </body>
-    </html>
   );
 }

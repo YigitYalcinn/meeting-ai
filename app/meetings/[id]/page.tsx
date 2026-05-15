@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ExportPdfButton } from "@/components/meetings/export-pdf-button";
 import { GenerateAnalysisButton } from "@/components/meetings/generate-analysis-button";
 import { GenerateTranscriptButton } from "@/components/meetings/generate-transcript-button";
+import { getCurrentUser } from "@/lib/auth";
 import { getMeetingActionItems, getMeetingKeyPoints } from "@/lib/meeting-analysis";
 import {
   deriveDecisionHighlights,
@@ -50,9 +51,14 @@ export default async function MeetingDetailPage({
   params,
 }: MeetingDetailPageProps) {
   const { id } = await params;
+  const user = await getCurrentUser();
 
-  const meeting = await prisma.meeting.findUnique({
-    where: { id },
+  if (!user) {
+    notFound();
+  }
+
+  const meeting = await prisma.meeting.findFirst({
+    where: { id, userId: user.id },
   });
 
   if (!meeting) {

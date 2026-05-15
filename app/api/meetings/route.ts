@@ -1,6 +1,4 @@
-import { mkdir } from "node:fs/promises";
-import path from "node:path";
-
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { saveUploadedFile } from "@/lib/uploads";
 import {
@@ -11,6 +9,12 @@ import {
 } from "@/lib/validations/meeting";
 
 async function handleMultipartMeetingRequest(request: Request) {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return Response.json({ error: "Authentication required." }, { status: 401 });
+  }
+
   const formData = await request.formData();
   const title = validateMeetingTitle(formData.get("title"));
   const sourceType = formData.get("sourceType");
@@ -58,6 +62,7 @@ async function handleMultipartMeetingRequest(request: Request) {
   if (validatedSourceType === "manual") {
     const meeting = await prisma.meeting.create({
       data: {
+        userId: user.id,
         title: validatedTitle,
         sourceType: validatedSourceType,
         status: "ready",
@@ -70,8 +75,6 @@ async function handleMultipartMeetingRequest(request: Request) {
   }
 
   const file = uploadedFile as File;
-  const uploadsRoot = path.join(process.cwd(), "uploads");
-  await mkdir(uploadsRoot, { recursive: true });
 
   if (validatedSourceType === "text_file") {
     if (!isSupportedTextFile(file.name)) {
@@ -93,6 +96,7 @@ async function handleMultipartMeetingRequest(request: Request) {
 
     const meeting = await prisma.meeting.create({
       data: {
+        userId: user.id,
         title: validatedTitle,
         sourceType: validatedSourceType,
         status: "ready",
@@ -116,6 +120,7 @@ async function handleMultipartMeetingRequest(request: Request) {
   const storedFile = await saveUploadedFile(file);
   const meeting = await prisma.meeting.create({
     data: {
+      userId: user.id,
       title: validatedTitle,
       sourceType: validatedSourceType,
       status: "pending_transcription",
@@ -131,7 +136,16 @@ async function handleMultipartMeetingRequest(request: Request) {
 
 export async function GET() {
   try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return Response.json({ error: "Authentication required." }, { status: 401 });
+    }
+
     const meetings = await prisma.meeting.findMany({
+      where: {
+        userId: user.id,
+      },
       orderBy: {
         createdAt: "desc",
       },
@@ -157,6 +171,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return Response.json({ error: "Authentication required." }, { status: 401 });
+    }
+
     const validationResult = validateMeetingInput(body);
 
     if (!validationResult.success) {
@@ -167,7 +187,10 @@ export async function POST(request: Request) {
     }
 
     const meeting = await prisma.meeting.create({
-      data: validationResult.data,
+      data: {
+        ...validationResult.data,
+        userId: user.id,
+      },
     });
 
     return Response.json(meeting, { status: 201 });

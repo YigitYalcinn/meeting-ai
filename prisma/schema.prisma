@@ -3,11 +3,32 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
+}
+
+model User {
+  id           String    @id @default(cuid())
+  name         String?
+  email        String    @unique
+  passwordHash String
+  meetings     Meeting[]
+  sessions     Session[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  tokenHash    String   @unique
+  userId       String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Meeting {
   id               String   @id @default(cuid())
+  userId           String?
   title            String
   sourceType       String
   status           String   @default("ready")
@@ -24,4 +45,5 @@ model Meeting {
   processedAt      DateTime?
   analyzedAt       DateTime?
   createdAt        DateTime @default(now())
+  user             User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

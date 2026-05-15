@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { CreateMeetingForm } from "@/components/meetings/create-meeting-form";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const sourceTypeLabels: Record<string, string> = {
@@ -57,7 +59,16 @@ function getStatusTone(status: string) {
 }
 
 export default async function WorkspacePage() {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
   const meetings = await prisma.meeting.findMany({
+    where: {
+      userId: user.id,
+    },
     orderBy: {
       createdAt: "desc",
     },
